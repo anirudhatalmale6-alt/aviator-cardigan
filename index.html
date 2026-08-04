@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Aviator Cardigan</title>
+<style>
+  :root{ --red:#d6283b; --gold:#e8c060; --gold-2:#f4dd9a; --bg0:#0b0f1a; --up:#20b862; --card:#141a2b; }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, #1f2a44 0%, transparent 60%),
+      linear-gradient(160deg,#0b0f1a 0%, #10152400 40%, #0b0f1a 100%), var(--bg0);
+    color:#eef1f7; min-height:100vh; overflow-x:hidden; display:flex; flex-direction:column;
+    max-width:520px; margin:0 auto; user-select:none;
+  }
+  /* ---------- header ---------- */
+  header{display:flex;align-items:center;gap:10px;padding:10px 14px;
+    background:linear-gradient(180deg,rgba(20,26,43,.9),rgba(11,15,26,.6));border-bottom:1px solid rgba(255,255,255,.06);}
+  .brand{display:flex;align-items:center;gap:9px;}
+  .brand .dot{width:26px;height:26px;border-radius:50%;
+    background:conic-gradient(var(--red) 0 25%, #1a1d22 0 50%, var(--red) 0 75%, #1a1d22 0);
+    box-shadow:0 0 0 2px var(--gold), 0 3px 10px rgba(0,0,0,.5); position:relative;}
+  .brand .dot::after{content:"✈";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--gold);}
+  .brand .nm{line-height:1.05;}
+  .brand .nm b{font-size:16px;background:linear-gradient(180deg,var(--gold-2),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:.3px;}
+  .brand .nm small{display:block;font-size:8px;color:#8794ab;letter-spacing:2px;text-transform:uppercase;font-weight:700;}
+  .spacer{flex:1;}
+  .musicbtn{width:34px;height:34px;border-radius:9px;border:1px solid rgba(255,255,255,.12);
+    background:rgba(255,255,255,.06);color:#9aa6bd;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;font-size:15px;}
+  .musicbtn.on{color:#12151b;background:linear-gradient(180deg,#ffe89a,#e8c060);border-color:#e8c060;box-shadow:0 0 12px rgba(232,192,96,.5);}
+  .balance{text-align:right;padding-left:4px;}
+  .balance .lbl{font-size:9px;color:#9aa6bd;text-transform:uppercase;letter-spacing:1px;}
+  .balance .amt{font-size:16px;font-weight:800;color:var(--gold-2);}
+  .balance .amt small{font-size:9px;color:#9aa6bd;font-weight:700;}
+
+  /* ---------- history strip ---------- */
+  .hist{display:flex;gap:6px;padding:8px 12px 4px;overflow-x:auto;scrollbar-width:none;}
+  .hist::-webkit-scrollbar{display:none;}
+  .hist .h{flex:0 0 auto;font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,.06);}
+  .h.lo{color:#7bb1ff;} .h.mid{color:#c79bff;} .h.hi{color:var(--gold-2);}
+
+  /* ---------- stage ---------- */
+  .stage{position:relative;margin:6px 12px 0;border-radius:16px;overflow:hidden;
+    height:300px;background:radial-gradient(120% 120% at 20% 100%, #16203a 0%, #0a0e18 70%);
+    border:1px solid rgba(255,255,255,.06);box-shadow:inset 0 0 60px rgba(0,0,0,.5);}
+  canvas{position:absolute;inset:0;width:100%;height:100%;}
+  .mult{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+  .mult .big{font-size:52px;font-weight:900;letter-spacing:1px;color:#fff;text-shadow:0 3px 18px rgba(0,0,0,.6);transition:color .15s,transform .15s;}
+  .mult.crashed .big{color:var(--red);transform:scale(1.05);}
+  .mult .sub{margin-top:6px;font-size:12px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#8794ab;}
+  .mult.crashed .sub{color:var(--red);}
+  .waiting{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+  .waiting .lbl{font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold-2);}
+  .cdbar{width:60%;height:6px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden;}
+  .cdbar .fill{height:100%;width:100%;background:linear-gradient(90deg,var(--up),var(--gold));transition:width .1s linear;}
+  .spin{width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:var(--gold);animation:sp 1s linear infinite;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+  .fair{position:absolute;left:8px;bottom:6px;font-size:8px;color:#59647d;letter-spacing:.5px;}
+
+  /* ---------- bet panel ---------- */
+  .panel{margin:10px 12px 14px;background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:12px;}
+  .betrow{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .stepper{display:flex;align-items:center;background:#0c1120;border:1px solid rgba(255,255,255,.1);border-radius:11px;overflow:hidden;flex:1;}
+  .stepper button{width:40px;height:46px;border:none;background:transparent;color:var(--gold-2);font-size:22px;font-weight:800;cursor:pointer;}
+  .stepper button:active{background:rgba(255,255,255,.06);}
+  .stepper .val{flex:1;text-align:center;}
+  .stepper .val .n{font-size:19px;font-weight:900;color:#fff;}
+  .stepper .val .c{font-size:9px;color:#9aa6bd;letter-spacing:1px;text-transform:uppercase;}
+  .chips{display:flex;gap:6px;}
+  .chips button{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#cdd6e6;
+    font-size:12px;font-weight:800;border-radius:9px;padding:0 10px;height:46px;cursor:pointer;}
+  .chips button:active{background:rgba(232,192,96,.15);}
+  .actbtn{width:100%;height:60px;border:none;border-radius:14px;font-size:19px;font-weight:900;letter-spacing:.5px;cursor:pointer;
+    color:#08210f;background:linear-gradient(180deg,#31d074,#1f9e55);box-shadow:0 6px 18px rgba(31,158,85,.4);transition:transform .08s;}
+  .actbtn:active{transform:translateY(2px);}
+  .actbtn.cashout{color:#2a1600;background:linear-gradient(180deg,#ffd36b,#e8a030);box-shadow:0 6px 18px rgba(232,160,48,.45);}
+  .actbtn.cancel{color:#fff;background:linear-gradient(180deg,#404a63,#2a3350);box-shadow:none;}
+  .actbtn:disabled{filter:grayscale(.6) brightness(.7);cursor:default;}
+  .actbtn .cashamt{display:block;font-size:12px;font-weight:800;opacity:.85;margin-top:1px;}
+  .toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);background:rgba(10,14,24,.95);
+    border:1px solid var(--gold);color:var(--gold-2);font-size:13px;font-weight:800;padding:9px 16px;border-radius:24px;
+    opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:20;white-space:nowrap;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+  .win-toast{border-color:var(--up);color:#6bffa5;}
+  .foot{text-align:center;font-size:9px;color:#4e586e;padding:2px 0 10px;letter-spacing:.5px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="dot"></div>
+    <div class="nm"><b>Aviator</b><small>Cardigan</small></div></div>
+  <div class="spacer"></div>
+  <div class="musicbtn" id="musicBtn" title="Música">♪</div>
+  <div class="balance"><div class="lbl">Saldo</div><div class="amt"><span id="bal">10.000</span> <small>UYU</small></div></div>
+</header>
+
+<div class="hist" id="hist"></div>
+
+<div class="stage" id="stage">
+  <canvas id="cv"></canvas>
+  <div class="mult" id="multWrap" style="display:none">
+    <div class="big" id="multBig">1.00x</div>
+    <div class="sub" id="multSub"></div>
+  </div>
+  <div class="waiting" id="waiting">
+    <div class="spin"></div>
+    <div class="lbl">Esperando la próxima ronda</div>
+    <div class="cdbar"><div class="fill" id="cdFill"></div></div>
+  </div>
+  <div class="fair" id="fair"></div>
+</div>
+
+<div class="panel">
+  <div class="betrow">
+    <div class="stepper">
+      <button id="minus">−</button>
+      <div class="val"><div class="n" id="betN">100</div><div class="c">UYU</div></div>
+      <button id="plus">+</button>
+    </div>
+    <div class="chips">
+      <button data-add="50">+50</button>
+      <button data-add="100">+100</button>
+      <button data-add="500">+500</button>
+    </div>
+  </div>
+  <button class="actbtn" id="act">APOSTAR</button>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="foot">Demo · Provably Fair · Aviator Cardigan</div>
+
+<script>
+(function(){
+  // ---------------- state ----------------
+  const S = { balance:10000, bet:100, phase:'wait', // wait | fly | crash
+    mult:1, crashAt:2, betPlaced:false, cashedAt:0, roundStart:0, waitEnd:0, hash:'' };
+  const $ = id=>document.getElementById(id);
+  const fmt = n=>n.toLocaleString('es-UY',{minimumFractionDigits:0,maximumFractionDigits:0});
+  const fmt2 = n=>n.toLocaleString('es-UY',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  // ---------------- provably-fair crash point ----------------
+  function hex(n){let s='';for(let i=0;i<n;i++)s+='0123456789abcdef'[Math.floor(Math.random()*16)];return s;}
+  function nextCrash(){
+    S.hash = hex(16);
+    const r = Math.random();
+    if(r < 0.03) return 1.00;                 // ~3% instant bust = house edge
+    let c = Math.floor(99/(1-r))/100;         // 1/(1-r) distribution with edge
+    return Math.max(1.01, Math.min(c, 1000)); // cap for demo sanity
+  }
+
+  // ---------------- canvas ----------------
+  const cv=$('cv'), ctx=cv.getContext('2d'); let W=0,H=0,dpr=1;
+  function resize(){
+    const r=$('stage').getBoundingClientRect();
+    dpr=Math.min(window.devicePixelRatio||1,2.5);
+    W=r.width; H=r.height;
+    cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  window.addEventListener('resize',()=>{ clearTimeout(resize._t); resize._t=setTimeout(resize,120); });
+  window.addEventListener('orientationchange',()=>setTimeout(resize,180));
+
+  function planePos(mult){
+    const p = 1 - 1/mult;               // 0..1, asymptotes toward corner
+    const padL=34, padR=34, padT=42, padB=40;
+    const x = padL + Math.pow(p,0.72)*(W-padL-padR);
+    const y = (H-padB) - Math.pow(p,1.55)*(H-padT-padB);
+    return {x,y};
+  }
+  function drawGrid(){
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle='rgba(255,255,255,.04)'; ctx.lineWidth=1;
+    for(let i=1;i<5;i++){const y=H/5*i;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    for(let i=1;i<5;i++){const x=W/5*i;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  }
+  function drawCurve(mult,crashed){
+    drawGrid();
+    const steps=48, pts=[];
+    for(let i=0;i<=steps;i++){
+      const m = 1 + (mult-1)*(i/steps);
+      pts.push(planePos(m));
+    }
+    const end=pts[pts.length-1];
+    // filled area under curve
+    const grd=ctx.createLinearGradient(0,0,0,H);
+    grd.addColorStop(0, crashed?'rgba(214,40,59,.28)':'rgba(214,40,59,.30)');
+    grd.addColorStop(1,'rgba(214,40,59,0)');
+    ctx.beginPath(); ctx.moveTo(pts[0].x,H);
+    pts.forEach(p=>ctx.lineTo(p.x,p.y));
+    ctx.lineTo(end.x,H); ctx.closePath(); ctx.fillStyle=grd; ctx.fill();
+    // curve line
+    ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
+    ctx.strokeStyle=crashed?'#8a1c28':'#ff3d52'; ctx.lineWidth=3.2; ctx.lineJoin='round';
+    ctx.shadowColor='rgba(255,61,82,.6)'; ctx.shadowBlur=crashed?0:10; ctx.stroke(); ctx.shadowBlur=0;
+    // plane
+    if(!crashed) drawPlane(end.x,end.y, pts[steps-1]);
+  }
+  function drawPlane(x,y,prev){
+    const ang=Math.atan2(y-prev.y, x-prev.x);
+    ctx.save(); ctx.translate(x,y); ctx.rotate(ang);
+    ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=6;
+    // body
+    ctx.fillStyle='#f4dd9a'; ctx.beginPath();
+    ctx.moveTo(14,0); ctx.lineTo(-8,-6); ctx.lineTo(-3,0); ctx.lineTo(-8,6); ctx.closePath(); ctx.fill();
+    // wing
+    ctx.fillStyle='#e8c060'; ctx.beginPath();
+    ctx.moveTo(0,-2); ctx.lineTo(-10,-11); ctx.lineTo(-4,-2); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0,2); ctx.lineTo(-10,11); ctx.lineTo(-4,2); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  function drawIdle(){ drawGrid();
+    const p=planePos(1.0); drawPlane(p.x+6,p.y-2,{x:p.x-14,y:p.y+8}); }
+
+  // ---------------- multiplier growth ----------------
+  function multAt(sec){ return Math.exp(0.145*sec); } // 1.00 -> ~2x @4.8s, ~5x @11s
+
+  // ---------------- round loop ----------------
+  function startWait(){
+    S.phase='wait'; S.betPlaced=false; S.cashedAt=0; S.mult=1; S.crashAt=nextCrash();
+    S.waitEnd = performance.now()+6000;
+    $('waiting').style.display='flex'; $('multWrap').style.display='none';
+    $('multWrap').classList.remove('crashed');
+    $('fair').textContent='Hash: '+S.hash+' · verificable';
+    drawIdle(); syncButton();
+  }
+  function startFly(){
+    S.phase='fly'; S.roundStart=performance.now();
+    $('waiting').style.display='none'; $('multWrap').style.display='flex';
+    $('multWrap').classList.remove('crashed'); $('multSub').textContent='';
+    if(S.betPlaced){ // lock the stake now
+      $('bal').textContent=fmt(S.balance);
+    }
+    syncButton();
+  }
+  function crash(){
+    S.phase='crash'; S.mult=S.crashAt;
+    $('multBig').textContent=S.crashAt.toFixed(2)+'x';
+    $('multWrap').classList.add('crashed'); $('multSub').textContent='Se voló ✈';
+    drawCurve(S.crashAt,true);
+    pushHist(S.crashAt);
+    if(S.betPlaced && !S.cashedAt){ toast('Perdiste '+fmt(S.bet)+' UYU',false); }
+    S.betPlaced=false; syncButton();
+    setTimeout(startWait,2600);
+  }
+  function loop(now){
+    if(S.phase==='wait'){
+      const left=Math.max(0,S.waitEnd-now);
+      $('cdFill').style.width=(left/6000*100)+'%';
+      if(left<=0) startFly();
+    } else if(S.phase==='fly'){
+      const sec=(now-S.roundStart)/1000;
+      S.mult=multAt(sec);
+      if(S.mult>=S.crashAt){ crash(); }
+      else{
+        $('multBig').textContent=S.mult.toFixed(2)+'x';
+        drawCurve(S.mult,false);
+        syncButton();
+      }
+    }
+    requestAnimationFrame(loop);
+  }
+
+  // ---------------- history ----------------
+  const HIST=[];
+  function cls(m){ return m<2?'lo':(m<10?'mid':'hi'); }
+  function pushHist(m){ HIST.unshift(m); if(HIST.length>18)HIST.pop(); renderHist(); }
+  function renderHist(){ $('hist').innerHTML=HIST.map(m=>`<div class="h ${cls(m)}">${m.toFixed(2)}x</div>`).join(''); }
+
+  // ---------------- betting ----------------
+  function setBet(v){ S.bet=Math.max(50,Math.min(v, Math.max(50,Math.floor(S.balance)))); $('betN').textContent=fmt(S.bet); }
+  $('minus').onclick=()=>setBet(S.bet-50);
+  $('plus').onclick =()=>setBet(S.bet+50);
+  document.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>setBet(S.bet+ +b.dataset.add));
+
+  function syncButton(){
+    const b=$('act');
+    b.classList.remove('cashout','cancel'); b.disabled=false;
+    if(S.phase==='fly' && S.betPlaced && !S.cashedAt){
+      b.classList.add('cashout');
+      b.innerHTML='RETIRAR <span class="cashamt">'+fmt(Math.floor(S.bet*S.mult))+' UYU</span>';
+    } else if(S.phase==='wait' && S.betPlaced){
+      b.classList.add('cancel'); b.textContent='CANCELAR ('+fmt(S.bet)+')';
+    } else if(S.phase==='wait'){
+      b.textContent='APOSTAR '+fmt(S.bet);
+    } else {
+      b.disabled=true;
+      b.textContent = S.betPlaced? (S.cashedAt?'RETIRADO '+S.cashedAt.toFixed(2)+'x':'EN JUEGO') : 'RONDA EN CURSO';
+    }
+  }
+  $('act').onclick=()=>{
+    if(S.phase==='wait' && !S.betPlaced){
+      if(S.bet>S.balance){ toast('Saldo insuficiente',false); return; }
+      S.balance-=S.bet; S.betPlaced=true; $('bal').textContent=fmt(S.balance); syncButton();
+    } else if(S.phase==='wait' && S.betPlaced){
+      S.balance+=S.bet; S.betPlaced=false; $('bal').textContent=fmt(S.balance); syncButton();
+    } else if(S.phase==='fly' && S.betPlaced && !S.cashedAt){
+      const win=Math.floor(S.bet*S.mult); S.cashedAt=S.mult; S.balance+=win;
+      $('bal').textContent=fmt(S.balance);
+      toast('¡Retiraste '+S.mult.toFixed(2)+'x  ·  +'+fmt(win)+' UYU!',true);
+      syncButton();
+    }
+  };
+
+  // ---------------- toast ----------------
+  let tT; function toast(msg,win){ const t=$('toast'); t.textContent=msg;
+    t.classList.toggle('win-toast',!!win); t.classList.add('show');
+    clearTimeout(tT); tT=setTimeout(()=>t.classList.remove('show'),2200); }
+
+  // ---------------- music (webaudio ambient, off by default) ----------------
+  let ac,gain,on=false,nodes=[];
+  $('musicBtn').onclick=function(){
+    if(!ac){ ac=new (window.AudioContext||window.webkitAudioContext)(); gain=ac.createGain();
+      gain.gain.value=0.12; gain.connect(ac.destination);
+      [110,165,220].forEach((f,i)=>{ const o=ac.createOscillator(),g=ac.createGain();
+        o.type='sine'; o.frequency.value=f; g.gain.value=i?0.25:0.4; o.connect(g); g.connect(gain); o.start(); nodes.push(o); }); }
+    on=!on; ac.resume();
+    gain.gain.setTargetAtTime(on?0.12:0, ac.currentTime, .2);
+    this.classList.toggle('on',on);
+  };
+
+  // ---------------- go ----------------
+  resize(); setBet(100); drawIdle(); startWait(); requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
